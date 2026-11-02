@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KitLoop Prototype</title>
+<style>
+  :root{--bg:#f6f7f9;--card:#fff;--ink:#1c2430;--mute:#6b7685;--brand:#0f766e;--warn:#b45309;--bad:#b91c1c;--line:#e3e7ec}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--brand);color:#fff;padding:14px 16px}
+  header h1{margin:0;font-size:20px}
+  header p{margin:2px 0 0;font-size:12px;opacity:.85}
+  nav{display:flex;gap:4px;padding:8px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;overflow-x:auto}
+  nav button{flex:1;min-width:110px;padding:10px;border:0;background:none;font-weight:600;color:var(--mute);border-radius:8px;cursor:pointer}
+  nav button.on{background:#e6f4f2;color:var(--brand)}
+  main{max-width:900px;margin:0 auto;padding:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  h2{font-size:16px;margin:0 0 10px}
+  label{display:block;font-size:12px;color:var(--mute);margin:8px 0 3px}
+  input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:15px;background:#fff}
+  .btn{padding:10px 14px;border:0;border-radius:8px;background:var(--brand);color:#fff;font-weight:600;font-size:14px;cursor:pointer}
+  .btn.sec{background:#eef1f4;color:var(--ink)}
+  .btn.bad{background:var(--bad)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{color:var(--mute);font-weight:600;font-size:12px}
+  .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700}
+  .ok{background:#dcfce7;color:#166534}.low{background:#fef3c7;color:var(--warn)}.out{background:#fee2e2;color:var(--bad)}
+  .out2{background:#e0e7ff;color:#3730a3}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+  .kpi{background:#f1f5f4;border-radius:10px;padding:10px}
+  .kpi b{display:block;font-size:22px}.kpi span{font-size:11px;color:var(--mute)}
+  .note{font-size:12px;color:var(--mute);margin-top:8px}
+  .receipt{background:#f0fdf4;border:1px dashed #86efac;border-radius:10px;padding:12px;margin-top:10px;font-size:14px}
+  .err{background:#fef2f2;border:1px solid #fecaca;color:var(--bad);border-radius:10px;padding:10px;margin-top:10px;font-size:14px}
+  .hide{display:none}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>KitLoop</h1>
+  <p>Campus electronics component and kit lending library · Prototype v0.1 (concierge-stage)</p>
+</header>
+<nav>
+  <button data-tab="request" class="on">1. Request</button>
+  <button data-tab="returns">2. Returns</button>
+  <button data-tab="dash">Demand log</button>
+</nav>
+<main>
+
+<!-- FEATURE 1 -->
+<section id="request">
+  <div class="card">
+    <h2>Feature 1: Rental request with live stock check</h2>
+    <label>Name</label><input id="rName" placeholder="Student name">
+    <label>Roll number (college ID)</label><input id="rRoll" placeholder="e.g. 24WU0104023">
+    <label>Component or kit</label><select id="rItem"></select>
+    <label>Days needed (1 to 14)</label><input id="rDays" type="number" min="1" max="14" value="3">
+    <div id="rPreview" class="note"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="rSubmit">Request item</button></div>
+    <div id="rMsg"></div>
+  </div>
+  <div class="card">
+    <h2>Shelf stock (live)</h2>
+    <table id="stockTable"></table>
+    <p class="note">Sample catalogue and prices are placeholders. The real 20 to 30 items and prices will be set from interview results.</p>
+  </div>
+</section>
+
+<!-- FEATURE 2 -->
+<section id="returns" class="hide">
+  <div class="card">
+    <h2>Feature 2: Return and inspection tracker</h2>
+    <p class="note" style="margin-top:0">Handover to return to test to restock. A returned item goes back on the shelf only if it passes the check; otherwise it is flagged and the deposit is partly or fully kept.</p>
+    <table id="loanTable"></table>
+    <div id="loanEmpty" class="note hide">No open rentals. Make a request in tab 1.</div>
+  </div>
+  <div class="card">
+    <h2>Closed rentals</h2>
+    <table id="closedTable"></table>
+    <div id="closedEmpty" class="note">Nothing returned yet.</div>
+  </div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="dash" class="hide">
+  <div class="card">
+    <h2>Pilot metrics (from the log)</h2>
+    <div class="grid" id="kpis"></div>
+    <p class="note">These match the thresholds in the validation plan: 10+ rentals from 6+ students, 90%+ returned on time and undamaged, under 10% items lost, and 3+ repeat rentals a week.</p>
+  </div>
+  <div class="card">
+    <h2>Demand by item</h2>
+    <table id="demandTable"></table>
+  </div>
+  <div class="card">
+    <h2>Stock-out requests</h2>
+    <table id="soTable"></table>
+    <div id="soEmpty" class="note">None logged yet.</div>
+  </div>
+  <div class="card">
+    <button class="btn sec" id="exportBtn">Export log as CSV</button>
+    <button class="btn bad" id="resetBtn">Reset demo data</button>
+  </div>
+</section>
+
+</main>
+<script>
+const KEY = "kitloop_v1";
+const SEED_ITEMS = [
+  {id:"esp32",  name:"ESP32 dev board",          stock:4, rent:15, deposit:300},
+  {id:"uno",    name:"Arduino Uno",              stock:5, rent:12, deposit:300},
+  {id:"hcsr04", name:"HC-SR04 ultrasonic sensor",stock:6, rent:5,  deposit:80},
+  {id:"dht11",  name:"DHT11 temp/humidity",      stock:5, rent:5,  deposit:80},
+  {id:"servo",  name:"SG90 servo motor",         stock:6, rent:5,  deposit:80},
+  {id:"l298",   name:"L298N motor driver",       stock:3, rent:8,  deposit:150},
+  {id:"oled",   name:"0.96in OLED display",      stock:3, rent:8,  deposit:150},
+  {id:"relay",  name:"2-channel relay module",   stock:4, rent:6,  deposit:100},
+  {id:"iot",    name:"IoT starter kit (ESP32 + 4 sensors)", stock:2, rent:30, deposit:600},
+  {id:"bread",  name:"Breadboard + jumper set",  stock:8, rent:4,  deposit:60}
+];
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.items) return s; }catch(e){}
+  return {items:structuredClone(SEED_ITEMS), loans:[], stockouts:[], seq:1};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+let state = load();
+const $ = id => document.getElementById(id);
+const today = () => new Date().toISOString().slice(0,10);
+const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x.toISOString().slice(0,10); };
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const itemById = id => state.items.find(i=>i.id===id);
+
+/* ---------- Feature 1 logic ---------- */
+function quote(itemId, days){
+  const it = itemById(itemId); days = Math.max(1, Math.min(14, parseInt(days)||0));
+  if(!it || !days) return null;
+  const rent = it.rent*days;
+  return {rent, deposit:it.deposit, total:rent+it.deposit, days};
+}
+function requestItem(name, roll, itemId, days){
+  name=(name||"").trim(); roll=(roll||"").trim();
+  const d = parseInt(days);
+  if(!name || !roll) return {ok:false, msg:"Enter name and roll number."};
+  if(!(d>=1 && d<=14)) return {ok:false, msg:"Days must be between 1 and 14."};
+  const it = itemById(itemId);
+  if(!it) return {ok:false, msg:"Item not found."};
+  if(it.stock<=0){
+    state.stockouts.push({date:today(), item:it.name, roll, name});
+    save();
+    return {ok:false, stockout:true, msg:it.name+" is out of stock. Your request is logged as demand so it is restocked."};
+  }
+  const q = quote(itemId, d);
+  it.stock -= 1;
+  const loan = {id:"KL"+String(state.seq++).padStart(4,"0"), name, roll, itemId, itemName:it.name,
+    days:d, out:today(), due:addDays(today(), d), rent:q.rent, deposit:q.deposit, status:"open"};
+  state.loans.push(loan); save();
+  return {ok:true, loan, quote:q};
+}
+function renderRequestTab(){
+  $("rItem").innerHTML = state.items.map(i=>`<option value="${i.id}">${esc(i.name)} (${i.stock>0?i.stock+" in stock":"out of stock"})</option>`).join("");
+  updatePreview();
+  $("stockTable").innerHTML = "<tr><th>Item</th><th>Rent/day</th><th>Deposit</th><th>Stock</th></tr>" +
+    state.items.map(i=>{
+      const tag = i.stock<=0?'<span class="tag out">Out</span>':i.stock<=1?'<span class="tag low">'+i.stock+' left</span>':'<span class="tag ok">'+i.stock+'</span>';
+      return `<tr><td>${esc(i.name)}</td><td>₹${i.rent}</td><td>₹${i.deposit}</td><td>${tag}</td></tr>`;
+    }).join("");
+}
+function updatePreview(){
+  const q = quote($("rItem").value, $("rDays").value);
+  $("rPreview").textContent = q ? `Rent ₹${q.rent} + refundable deposit ₹${q.deposit} = pay ₹${q.total} by UPI at handover.` : "";
+}
+
+/* ---------- Feature 2 logic ---------- */
+function returnItem(loanId, result){ // result: "pass" | "damaged" | "lost"
+  const l = state.loans.find(x=>x.id===loanId && x.status==="open");
+  if(!l) return false;
+  const it = itemById(l.itemId);
+  l.returned = today();
+  l.late = l.returned > l.due;
+  l.result = result;
+  l.status = "closed";
+  if(result==="pass"){ it.stock += 1; l.depositBack = l.deposit; }
+  else if(result==="damaged"){ l.depositBack = 0; } // item held back from shelf for repair or replacement
+  else { l.depositBack = 0; }
+  save(); return true;
+}
+function renderReturns(){
+  const open = state.loans.filter(l=>l.status==="open");
+  $("loanEmpty").classList.toggle("hide", open.length>0);
+  $("loanTable").innerHTML = open.length ? "<tr><th>ID</th><th>Student</th><th>Item</th><th>Due</th><th>Inspect on return</th></tr>" +
+    open.map(l=>{
+      const overdue = today()>l.due ? ' <span class="tag out">Overdue</span>' : "";
+      return `<tr><td>${l.id}</td><td>${esc(l.name)}<br><small>${esc(l.roll)}</small></td><td>${esc(l.itemName)}</td><td>${l.due}${overdue}</td>
+      <td><div class="row"><button class="btn" data-r="${l.id}" data-v="pass">Tested OK</button>
+      <button class="btn sec" data-r="${l.id}" data-v="damaged">Damaged</button>
+      <button class="btn bad" data-r="${l.id}" data-v="lost">Lost</button></div></td></tr>`;
+    }).join("") : "";
+  const closed = state.loans.filter(l=>l.status==="closed");
+  $("closedEmpty").classList.toggle("hide", closed.length>0);
+  $("closedTable").innerHTML = closed.length ? "<tr><th>ID</th><th>Item</th><th>Result</th><th>Deposit back</th></tr>" +
+    closed.map(l=>{
+      const t = l.result==="pass"?'<span class="tag ok">Passed'+(l.late?' (late)':'')+'</span>':l.result==="damaged"?'<span class="tag low">Damaged</span>':'<span class="tag out">Lost</span>';
+      return `<tr><td>${l.id}</td><td>${esc(l.itemName)}</td><td>${t}</td><td>₹${l.depositBack}</td></tr>`;
+    }).join("") : "";
+}
+
+/* ---------- Dashboard ---------- */
+function metrics(){
+  const L = state.loans, closed = L.filter(l=>l.status==="closed");
+  const students = new Set(L.map(l=>l.roll.toLowerCase())).size;
+  const good = closed.filter(l=>l.result==="pass" && !l.late).length;
+  const lostDam = closed.filter(l=>l.result!=="pass").length;
+  const perStudent = {}; L.forEach(l=>{ const k=l.roll.toLowerCase(); perStudent[k]=(perStudent[k]||0)+1; });
+  const repeaters = Object.values(perStudent).filter(n=>n>1).length;
+  return {
+    rentals:L.length, students,
+    onTimePct: closed.length ? Math.round(100*good/closed.length) : null,
+    lostPct: closed.length ? Math.round(100*lostDam/closed.length) : null,
+    repeatPct: students ? Math.round(100*repeaters/students) : null,
+    revenue: L.reduce((s,l)=>s+l.rent,0), stockouts: state.stockouts.length
+  };
+}
+function renderDash(){
+  const m = metrics(), p = v => v===null?"n/a":v+"%";
+  $("kpis").innerHTML = [
+    ["Rentals",m.rentals],["Different students",m.students],["Returned on time & OK",p(m.onTimePct)],
+    ["Lost or damaged",p(m.lostPct)],["Repeat renters",p(m.repeatPct)],["Rent earned","₹"+m.revenue],["Stock-out requests",m.stockouts]
+  ].map(([k,v])=>`<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join("");
+  const counts = {}; state.loans.forEach(l=>counts[l.itemName]=(counts[l.itemName]||0)+1);
+  const rows = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  $("demandTable").innerHTML = rows.length ? "<tr><th>Item</th><th>Rentals</th></tr>"+rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v}</td></tr>`).join("") : "<tr><td class='note'>No rentals yet.</td></tr>";
+  $("soEmpty").classList.toggle("hide", state.stockouts.length>0);
+  $("soTable").innerHTML = state.stockouts.length ? "<tr><th>Date</th><th>Item</th><th>Roll</th></tr>"+state.stockouts.map(s=>`<tr><td>${s.date}</td><td>${esc(s.item)}</td><td>${esc(s.roll)}</td></tr>`).join("") : "";
+}
+function exportCsv(){
+  const head = ["id","name","roll","item","days","out","due","returned","result","rent","deposit","depositBack"];
+  const rows = state.loans.map(l=>head.map(h=>{ const k = h==="item"?"itemName":h; return '"'+String(l[k]??"").replace(/"/g,'""')+'"'; }).join(","));
+  const blob = new Blob([head.join(",")+"\n"+rows.join("\n")], {type:"text/csv"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "kitloop_log.csv"; a.click();
+}
+
+/* ---------- wiring ---------- */
+function showTab(t){
+  ["request","returns","dash"].forEach(s=>$(s).classList.toggle("hide", s!==t));
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on", b.dataset.tab===t));
+  if(t==="request") renderRequestTab(); if(t==="returns") renderReturns(); if(t==="dash") renderDash();
+}
+if(typeof document !== "undefined" && !window.__KL_TEST){
+  document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+  $("rItem").onchange = updatePreview; $("rDays").oninput = updatePreview;
+  $("rSubmit").onclick = ()=>{
+    const r = requestItem($("rName").value,$("rRoll").value,$("rItem").value,$("rDays").value);
+    if(r.ok){
+      $("rMsg").innerHTML = `<div class="receipt"><b>Request ${r.loan.id} confirmed</b><br>${esc(r.loan.itemName)} for ${r.loan.days} day(s), due ${r.loan.due}.<br>Pay ₹${r.quote.total} by UPI (rent ₹${r.quote.rent} + deposit ₹${r.quote.deposit}) at handover.</div>`;
+    } else {
+      $("rMsg").innerHTML = `<div class="err">${esc(r.msg)}</div>`;
+    }
+    renderRequestTab();
+  };
+  document.addEventListener("click", e=>{
+    const b = e.target.closest("button[data-r]"); if(!b) return;
+    returnItem(b.dataset.r, b.dataset.v); renderReturns();
+  });
+  $("exportBtn").onclick = exportCsv;
+  $("resetBtn").onclick = ()=>{ if(confirm("Reset all demo data?")){ state = {items:structuredClone(SEED_ITEMS), loans:[], stockouts:[], seq:1}; save(); showTab("dash"); } };
+  renderRequestTab();
+}
+</script>
+</body>
+</html>
